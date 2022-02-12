@@ -899,13 +899,9 @@ impl<'ctx> Real<'ctx> {
         Int::from_real(self)
     }
 
-    pub fn decimal_string(&self, ctx: &'ctx Context, precision: u32) -> std::string::String {
+    pub fn as_f64(&self, ctx: &'ctx Context) -> f64 {
         unsafe {
-            CString::from_raw(
-                Z3_get_numeral_decimal_string(ctx.z3_ctx, self.z3_ast, precision) as *mut i8,
-            )
-            .to_string_lossy()
-            .to_string()
+            Z3_get_numeral_double(ctx.z3_ctx, self.z3_ast)
         }
     }
 
