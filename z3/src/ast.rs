@@ -184,7 +184,9 @@ pub trait Ast<'ctx>: fmt::Debug {
         }
     }
     */
-    fn new(ctx: &'ctx Context, ast: Z3_ast) -> Self where Self: Sized;
+    fn new(ctx: &'ctx Context, ast: Z3_ast) -> Self
+    where
+        Self: Sized;
 
     /// Compare this `Ast` with another `Ast`, and get a [`Bool`](struct.Bool.html)
     /// representing the result.
@@ -193,26 +195,29 @@ pub trait Ast<'ctx>: fmt::Debug {
     /// `Ast`s being compared must be the same type.
     //
     // Note that we can't use the binop! macro because of the `pub` keyword on it
-    fn _eq(&self, other: &Self) -> Bool<'ctx> where Self: Sized {
+    fn _eq(&self, other: &Self) -> Bool<'ctx>
+    where
+        Self: Sized,
+    {
         self._safe_eq(other).unwrap()
     }
 
-
     /// Compare this `Ast` with another `Ast`, and get a Result.  Errors if the sort does not
     /// match for the two values.
-    fn _safe_eq(&self, other: &Self) -> Result<Bool<'ctx>, SortDiffers<'ctx>> where Self: Sized {
+    fn _safe_eq(&self, other: &Self) -> Result<Bool<'ctx>, SortDiffers<'ctx>>
+    where
+        Self: Sized,
+    {
         assert_eq!(self.get_ctx(), other.get_ctx());
 
         let left_sort = self.get_sort();
         let right_sort = other.get_sort();
         match left_sort == right_sort {
-            true => {
-                Ok(Bool::new(self.get_ctx(), unsafe {
-                    let _guard = Z3_MUTEX.lock().unwrap();
-                    Z3_mk_eq(self.get_ctx().z3_ctx, self.get_z3_ast(), other.get_z3_ast())
-                }))
-            },
-            false => Err(SortDiffers::new(left_sort, right_sort))
+            true => Ok(Bool::new(self.get_ctx(), unsafe {
+                let _guard = Z3_MUTEX.lock().unwrap();
+                Z3_mk_eq(self.get_ctx().z3_ctx, self.get_z3_ast(), other.get_z3_ast())
+            })),
+            false => Err(SortDiffers::new(left_sort, right_sort)),
         }
     }
 
@@ -223,7 +228,10 @@ pub trait Ast<'ctx>: fmt::Debug {
     /// `Ast`s being compared must all be the same type.
     //
     // Note that we can't use the varop! macro because of the `pub` keyword on it
-    fn distinct(context: &'ctx Context, values: &[&Self]) -> Bool<'ctx> where Self: Sized {
+    fn distinct(context: &'ctx Context, values: &[&Self]) -> Bool<'ctx>
+    where
+        Self: Sized,
+    {
         Bool::new(context, unsafe {
             let _guard = Z3_MUTEX.lock().unwrap();
             assert!(values.len() <= 0xffffffff);
@@ -242,7 +250,10 @@ pub trait Ast<'ctx>: fmt::Debug {
     /// Simplify the `Ast`. Returns a new `Ast` which is equivalent,
     /// but simplified using algebraic simplification rules, such as
     /// constant propagation.
-    fn simplify(&self) -> Self where Self: Sized {
+    fn simplify(&self) -> Self
+    where
+        Self: Sized,
+    {
         Self::new(self.get_ctx(), unsafe {
             Z3_simplify(self.get_ctx().z3_ctx, self.get_z3_ast())
         })
@@ -250,7 +261,10 @@ pub trait Ast<'ctx>: fmt::Debug {
 
     /// Performs substitution on the `Ast`. The slice `substitutions` contains a
     /// list of pairs with a "from" `Ast` that will be substituted by a "to" `Ast`.
-    fn substitute<T: Ast<'ctx>>(&self, substitutions: &[(&T, &T)]) -> Self where Self: Sized {
+    fn substitute<T: Ast<'ctx>>(&self, substitutions: &[(&T, &T)]) -> Self
+    where
+        Self: Sized,
+    {
         Self::new(self.get_ctx(), unsafe {
             let _guard = Z3_MUTEX.lock().unwrap();
 
@@ -356,7 +370,10 @@ pub trait Ast<'ctx>: fmt::Debug {
         }
     }
 
-    fn translate<'src_ctx>(&'src_ctx self, dest: &'ctx Context) -> Self where Self: Sized {
+    fn translate<'src_ctx>(&'src_ctx self, dest: &'ctx Context) -> Self
+    where
+        Self: Sized,
+    {
         Self::new(dest, unsafe {
             let _guard = Z3_MUTEX.lock().unwrap();
             Z3_translate(self.get_ctx().z3_ctx, self.get_z3_ast(), dest.z3_ctx)
@@ -880,6 +897,16 @@ impl<'ctx> Real<'ctx> {
     /// [`Int::from_real`](struct.Int.html#method.from_real); see notes there
     pub fn to_int(&self) -> Int<'ctx> {
         Int::from_real(self)
+    }
+
+    pub fn decimal_string(&self, ctx: &'ctx Context, precision: u32) -> std::string::String {
+        unsafe {
+            CString::from_raw(
+                Z3_get_numeral_decimal_string(ctx.z3_ctx, self.z3_ast, precision) as *mut i8,
+            )
+            .to_string_lossy()
+            .to_string()
+        }
     }
 
     unop! {
@@ -1776,9 +1803,7 @@ pub fn exists_const<'ctx>(
 
 impl IsNotApp {
     pub fn new(kind: AstKind) -> Self {
-        Self {
-            kind,
-        }
+        Self { kind }
     }
 
     pub fn kind(&self) -> AstKind {
@@ -1788,6 +1813,10 @@ impl IsNotApp {
 
 impl fmt::Display for IsNotApp {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "ast node is not a function application, has kind {:?}", self.kind())
+        write!(
+            f,
+            "ast node is not a function application, has kind {:?}",
+            self.kind()
+        )
     }
 }
