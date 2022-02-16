@@ -909,6 +909,16 @@ impl<'ctx> Real<'ctx> {
         }
     }
 
+    pub fn approx(&self, ctx: &'ctx Context, precision: u32) -> Real {
+        unsafe {
+            if Z3_is_algebraic_number(ctx.z3_ctx, self.z3_ast) {
+                return Real::new(ctx, Z3_get_algebraic_number_upper(ctx.z3_ctx, self.z3_ast, precision))
+            } else {
+                return self.clone()
+            }
+        }
+    }
+
     pub fn as_f64(&self, ctx: &'ctx Context) -> f64 {
         unsafe {
             Z3_get_numeral_double(ctx.z3_ctx, self.z3_ast)
